@@ -1,0 +1,2888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADHDFlow — ADHD Productivity</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d14;
+    --surface: #16161f;
+    --surface2: #1e1e2e;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0eeff;
+    --muted: #7b7a96;
+    --accent1: #c084fc; /* soft purple */
+    --accent2: #fb923c; /* warm orange */
+    --accent3: #34d399; /* mint */
+    --accent4: #60a5fa; /* sky */
+    --accent5: #f472b6; /* pink */
+    --glow1: rgba(192,132,252,0.15);
+    --glow2: rgba(251,146,60,0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(192,132,252,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(251,146,60,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 60% at 60% 10%, rgba(96,165,250,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent1), var(--accent4));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo span {
+    color: var(--accent2);
+    -webkit-text-fill-color: var(--accent2);
+  }
+
+  .energy-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .energy-badge:hover { border-color: var(--accent1); color: var(--text); }
+  .energy-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+
+  /* Greeting */
+  .greeting {
+    margin-bottom: 32px;
+  }
+  .greeting h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+  .greeting p { color: var(--muted); font-size: 0.95rem; }
+
+  /* Mood selector */
+  .mood-section {
+    margin-bottom: 32px;
+  }
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .mood-grid {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .mood-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mood-btn:hover { border-color: var(--accent1); background: var(--surface2); transform: translateY(-1px); }
+  .mood-btn.active {
+    border-color: var(--accent1);
+    background: var(--glow1);
+    color: var(--accent1);
+  }
+
+  /* Task cards */
+  .tasks-section { margin-bottom: 28px; }
+
+  .tasks-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .add-btn {
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 5px 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .add-btn:hover { border-color: var(--accent1); color: var(--accent1); }
+
+  .task-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .task-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    background: var(--accent-color, var(--accent1));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .task-card:hover::before { opacity: 1; }
+  .task-card:hover { background: var(--surface2); border-color: rgba(255,255,255,0.12); }
+  .task-card.done { opacity: 0.45; }
+  .task-card.done .task-title { text-decoration: line-through; }
+
+  /* Row 1: checkbox + title */
+  .task-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .task-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 11px;
+    margin-top: 1px;
+  }
+  .task-card:hover .task-check { border-color: var(--accent1); }
+  .task-card.done .task-check { background: var(--accent3); border-color: var(--accent3); }
+
+  .task-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.4;
+    flex: 1;
+    word-break: break-word;
+  }
+
+  /* Row 2: meta left, actions right */
+  .task-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .task-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .task-tag {
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 99px;
+    border: 1px solid;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .task-time {
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+
+  .task-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .icon-btn:hover { background: var(--surface2); color: var(--text); }
+
+  .start-btn {
+    background: linear-gradient(135deg, var(--accent1), var(--accent4));
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .start-btn:hover { opacity: 0.85; transform: scale(0.97); }
+
+  /* Focus Timer */
+  .timer-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 28px;
+    display: none;
+  }
+  .timer-section.visible { display: block; }
+
+  .timer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .timer-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent1);
+  }
+  .timer-close {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+  .timer-close:hover { color: var(--text); }
+
+  .timer-display {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .timer-task-name {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+  .timer-countdown {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(3rem, 10vw, 5rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, var(--accent1), var(--accent4));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .timer-progress-bar {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .timer-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent1), var(--accent4));
+    border-radius: 99px;
+    transition: width 1s linear;
+    width: 100%;
+  }
+
+  .timer-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .timer-len-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .timer-len-btn.active { border-color: var(--accent1); color: var(--accent1); background: var(--glow1); }
+  .timer-len-btn:hover { border-color: var(--accent1); color: var(--text); }
+
+  .timer-main-btns {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+  .timer-play-btn {
+    background: linear-gradient(135deg, var(--accent1), var(--accent4));
+    border: none;
+    border-radius: 12px;
+    padding: 12px 32px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .timer-play-btn:hover { opacity: 0.85; transform: scale(0.97); }
+  .timer-reset-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .timer-reset-btn:hover { color: var(--text); border-color: var(--muted); }
+
+  /* Brain dump */
+  .dump-section {
+    margin-bottom: 28px;
+  }
+  .dump-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 4px;
+    transition: border-color 0.2s;
+  }
+  .dump-box:focus-within { border-color: rgba(192,132,252,0.4); }
+  .dump-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    padding: 14px 16px 8px;
+    min-height: 80px;
+    placeholder-color: var(--muted);
+  }
+  .dump-textarea::placeholder { color: var(--muted); }
+  .dump-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+  }
+  .dump-hint { font-size: 0.75rem; color: var(--muted); }
+  .dump-save {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 14px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .dump-save:hover { color: var(--accent1); border-color: var(--accent1); }
+
+  /* Win streak */
+  .wins-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 20px;
+    margin-bottom: 28px;
+  }
+  .wins-emoji { font-size: 1.4rem; }
+  .wins-text { flex: 1; }
+  .wins-title { font-size: 0.9rem; font-weight: 500; margin-bottom: 2px; }
+  .wins-sub { font-size: 0.78rem; color: var(--muted); }
+  .streak-dots {
+    display: flex;
+    gap: 5px;
+  }
+  .streak-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .streak-dot.lit {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    box-shadow: 0 0 6px var(--accent2);
+  }
+
+  /* Add task modal overlay */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    max-width: 440px;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .modal-field { margin-bottom: 16px; }
+  .modal-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .modal-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal-input:focus { border-color: var(--accent1); }
+  .color-choices {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .color-choice {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .color-choice.selected { border-color: white; transform: scale(1.2); }
+  .modal-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .modal-cancel {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .modal-cancel:hover { color: var(--text); }
+  .modal-add {
+    flex: 2;
+    background: linear-gradient(135deg, var(--accent1), var(--accent4));
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    color: white;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+  .modal-add:hover { opacity: 0.85; }
+
+  /* ── AI Breakdown Panel ── */
+  .breakdown-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(6px);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .breakdown-overlay.show { display: flex; }
+
+  .breakdown-sheet {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 780px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    animation: sheetUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+  }
+  @keyframes sheetUp {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .breakdown-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .breakdown-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .breakdown-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--accent1), var(--accent5));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .breakdown-close {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.15s;
+  }
+  .breakdown-close:hover { background: var(--surface2); color: var(--text); }
+  .breakdown-task-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .breakdown-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  /* Loading state */
+  .breakdown-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+    gap: 14px;
+  }
+  .breakdown-loading.hidden { display: none; }
+  .spark-ring {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: var(--accent1);
+    border-right-color: var(--accent5);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .breakdown-loading-text {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* Steps list */
+  .breakdown-steps { display: none; }
+  .breakdown-steps.show { display: block; }
+
+  .breakdown-intro {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-style: italic;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeSlide 0.3s ease both;
+  }
+  .step-item:last-child { border-bottom: none; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent1), var(--accent4));
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-content { flex: 1; }
+  .step-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 3px;
+    line-height: 1.4;
+  }
+  .step-detail {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .step-add-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .step-add-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+  .step-add-btn.added { border-color: var(--accent3); color: var(--accent3); background: rgba(52,211,153,0.1); }
+
+  .breakdown-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .breakdown-add-all {
+    flex: 1;
+    background: linear-gradient(135deg, var(--accent1), var(--accent4));
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .breakdown-add-all:hover { opacity: 0.85; }
+  .breakdown-retry {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 18px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .breakdown-retry:hover { color: var(--text); border-color: var(--muted); }
+
+  /* Breakdown button on task card */
+  .breakdown-btn {
+    background: transparent;
+    border: 1px solid rgba(192,132,252,0.3);
+    border-radius: 8px;
+    padding: 5px 10px;
+    color: var(--accent1);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .breakdown-btn:hover { background: var(--glow1); border-color: var(--accent1); }
+
+  /* ── Deadline / Calendar Modal ── */
+  .deadline-sheet {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    flex-direction: column;
+    animation: sheetUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+  }
+  .deadline-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .deadline-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent3);
+    margin-bottom: 5px;
+  }
+  .deadline-task-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .deadline-body { padding: 20px 24px; }
+
+  .dl-field { margin-bottom: 18px; }
+  .dl-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .dl-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    color-scheme: dark;
+  }
+  .dl-input:focus { border-color: var(--accent3); }
+
+  .reminder-grid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .reminder-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .reminder-chip:hover { border-color: var(--accent3); color: var(--text); }
+  .reminder-chip.active { border-color: var(--accent3); color: var(--accent3); background: rgba(52,211,153,0.1); }
+
+  .cal-status {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .cal-status.show { display: flex; }
+  .cal-status.success { background: rgba(52,211,153,0.12); color: var(--accent3); border: 1px solid rgba(52,211,153,0.2); }
+  .cal-status.error   { background: rgba(251,146,60,0.12);  color: var(--accent2); border: 1px solid rgba(251,146,60,0.2); }
+  .cal-status.loading { background: rgba(192,132,252,0.1);  color: var(--accent1); border: 1px solid rgba(192,132,252,0.2); }
+
+  .deadline-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+  .dl-cancel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px 18px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dl-cancel:hover { color: var(--text); }
+  .dl-save {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 11px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dl-save:hover { border-color: var(--muted); }
+  .dl-cal-btn {
+    flex: 2;
+    background: linear-gradient(135deg, var(--accent3), #059669);
+    border: none;
+    border-radius: 12px;
+    padding: 11px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .dl-cal-btn:hover { opacity: 0.85; }
+  .dl-cal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Deadline badge on task card */
+  .deadline-badge {
+    font-size: 0.7rem;
+    color: var(--accent2);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+  .deadline-badge.urgent { color: #f87171; }
+
+  /* Calendar button on task card */
+  .cal-btn {
+    background: transparent;
+    border: 1px solid rgba(52,211,153,0.3);
+    border-radius: 8px;
+    padding: 5px 10px;
+    color: var(--accent3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .cal-btn:hover { background: rgba(52,211,153,0.1); border-color: var(--accent3); }
+
+  /* ── Repeat & Reminder styles ── */
+  .repeat-grid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .repeat-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 6px 13px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .repeat-chip:hover { border-color: var(--accent1); color: var(--text); }
+  .repeat-chip.active { border-color: var(--accent1); color: var(--accent1); background: var(--glow1); }
+
+  .days-picker {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    display: none;
+  }
+  .days-picker.show { display: flex; }
+  .day-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .day-btn.active { background: var(--accent1); border-color: var(--accent1); color: white; }
+
+  /* Notification toggle in deadline sheet */
+  .notif-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .notif-opt {
+    flex: 1;
+    padding: 9px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    color: var(--muted);
+    background: var(--surface2);
+    border: none;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .notif-opt.active { background: var(--glow1); color: var(--accent1); font-weight: 600; }
+  .notif-opt:first-child { border-right: 1px solid var(--border); }
+
+  /* Repeat badge on task card */
+  .repeat-badge {
+    font-size: 0.68rem;
+    color: var(--accent4);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+  }
+
+  /* ── Personal Playlists ── */
+  .my-playlists-section { margin-top: 14px; }
+  .my-pl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .my-pl-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .add-pl-btn {
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 4px 10px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .add-pl-btn:hover { border-color: var(--accent1); color: var(--accent1); }
+
+  .my-pl-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 4px 4px;
+    scrollbar-width: none;
+  }
+  .my-pl-scroll::-webkit-scrollbar { display: none; }
+
+  .my-pl-card {
+    flex-shrink: 0;
+    width: 140px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .my-pl-card:hover { border-color: var(--accent1); transform: translateY(-2px); }
+  .my-pl-card .playlist-icon { font-size: 1.5rem; margin-bottom: 6px; display: block; }
+  .my-pl-card .playlist-name { font-size: 0.78rem; font-weight: 600; font-family: 'Syne', sans-serif; color: var(--text); margin-bottom: 2px; line-height: 1.2; }
+  .my-pl-card .playlist-meta { font-size: 0.65rem; color: var(--muted); }
+  .my-pl-delete {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 0.7rem;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .my-pl-card:hover .my-pl-delete { opacity: 1; }
+  .my-pl-delete:hover { color: #f87171; }
+
+  .my-pl-empty {
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  /* Add playlist modal */
+  .pl-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .pl-modal-overlay.show { display: flex; }
+
+  /* ── Music Shelf ── */
+  .music-section { margin-bottom: 28px; }
+
+  .music-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 4px 6px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .music-scroll::-webkit-scrollbar { display: none; }
+
+  .playlist-card {
+    flex-shrink: 0;
+    width: 150px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: block;
+  }
+  .playlist-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent-pl, var(--accent1));
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .playlist-icon {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    display: block;
+    line-height: 1;
+  }
+  .playlist-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 3px;
+    line-height: 1.2;
+  }
+  .playlist-meta {
+    font-size: 0.68rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .playlist-platform {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+  .platform-spotify  { background: rgba(30,215,96,0.15); color: #1ed760; }
+  .platform-youtube  { background: rgba(255,0,0,0.12);   color: #ff4444; }
+  .platform-apple    { background: rgba(252,60,68,0.12);  color: #fc3c44; }
+
+  .music-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .music-tab {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 5px 13px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .music-tab:hover { color: var(--text); border-color: var(--accent1); }
+  .music-tab.active { border-color: var(--accent1); color: var(--accent1); background: var(--glow1); }
+
+  .music-platform-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 30px; height: 30px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.5;
+  }
+  .music-platform-btn:hover { opacity: 0.85; border-color: var(--accent1); }
+  .music-platform-btn.active { opacity: 1; border-color: var(--accent1); background: var(--glow1); }
+
+  /* ── Dice Roller ── */
+  .dice-section {
+    margin-bottom: 28px;
+  }
+  .dice-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .dice-left { flex-shrink: 0; }
+  .die {
+    width: 64px;
+    height: 64px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    position: relative;
+  }
+  .die:hover {
+    border-color: var(--accent2);
+    box-shadow: 0 0 16px rgba(251,146,60,0.2);
+    transform: scale(1.05);
+  }
+  .die.rolling {
+    animation: diceRoll 0.5s ease;
+  }
+  @keyframes diceRoll {
+    0%   { transform: rotate(0deg) scale(1); }
+    20%  { transform: rotate(-15deg) scale(1.15); }
+    40%  { transform: rotate(20deg) scale(0.9); }
+    60%  { transform: rotate(-10deg) scale(1.1); }
+    80%  { transform: rotate(8deg) scale(0.95); }
+    100% { transform: rotate(0deg) scale(1); }
+  }
+  .dice-right { flex: 1; min-width: 0; }
+  .dice-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 5px;
+  }
+  .dice-result {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+    min-height: 1.4em;
+    transition: opacity 0.2s;
+  }
+  .dice-result.fading { opacity: 0; }
+  .dice-hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .dice-go-btn {
+    background: linear-gradient(135deg, var(--accent2), #f59e0b);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 14px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+    display: none;
+  }
+  .dice-go-btn.show { display: inline-block; }
+  .dice-go-btn:hover { opacity: 0.85; transform: scale(0.97); }
+
+  /* ── Weekly Goals ── */
+  .goals-section { margin-bottom: 28px; }
+  .goals-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .goals-list { display: flex; flex-direction: column; gap: 10px; }
+  .goal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 20px;
+    transition: border-color 0.2s;
+  }
+  .goal-card:hover { border-color: rgba(255,255,255,0.12); }
+  .goal-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .goal-info { flex: 1; min-width: 0; }
+  .goal-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .goal-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .goal-counter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .counter-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .counter-btn:hover { border-color: var(--accent1); color: var(--accent1); }
+  .counter-display {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    min-width: 52px;
+    text-align: center;
+    line-height: 1;
+  }
+  .counter-display .current { color: var(--text); }
+  .counter-display .sep { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+  .counter-display .target { color: var(--muted); font-size: 0.85rem; }
+  .goal-bar-wrap {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .goal-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .goal-complete-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--accent3);
+    font-weight: 600;
+    margin-top: 6px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .goal-complete-badge.show { opacity: 1; }
+
+  /* Celebrate burst */
+  .confetti-piece {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 999;
+    animation: fall 1.2s ease-out forwards;
+  }
+  @keyframes fall {
+    0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translateY(300px) rotate(720deg) scale(0); opacity: 0; }
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .app { padding: 20px 16px 60px; }
+    .task-card { padding: 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">ADHD<span>Flow</span></div>
+    <div class="energy-badge" onclick="cycleEnergy()">
+      <div class="energy-dot" id="energyDot"></div>
+      <span id="energyLabel">High energy</span>
+    </div>
+    <button onclick="clearAllData()" title="Reset all data" style="background:transparent;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;padding:4px 8px;border-radius:6px;font-family:'DM Sans',sans-serif;transition:color 0.2s;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='var(--muted)'">reset</button>
+  </div>
+
+  <!-- Greeting -->
+  <div class="greeting">
+    <h1 id="greetingText">What's calling your attention?</h1>
+    <p>Pick what feels right. No order, no rules.</p>
+  </div>
+
+  <!-- Win streak -->
+  <div class="wins-bar">
+    <div class="wins-emoji">🔥</div>
+    <div class="wins-text">
+      <div class="wins-title">3 tasks crushed today</div>
+      <div class="wins-sub">You're on a roll — momentum is real</div>
+    </div>
+    <div class="streak-dots" id="streakDots"></div>
+  </div>
+
+  <!-- Mood / vibe filter -->
+  <div class="mood-section">
+    <div class="section-label">What's your vibe right now?</div>
+    <div class="mood-grid" id="moodGrid">
+      <button class="mood-btn active" data-mood="all" onclick="filterMood(this,'all')">✨ All of it</button>
+      <button class="mood-btn" data-mood="quick" onclick="filterMood(this,'quick')">⚡ Quick wins</button>
+      <button class="mood-btn" data-mood="creative" onclick="filterMood(this,'creative')">🎨 Creative mode</button>
+      <button class="mood-btn" data-mood="admin" onclick="filterMood(this,'admin')">📋 Admin brain</button>
+      <button class="mood-btn" data-mood="deep" onclick="filterMood(this,'deep')">🧠 Deep focus</button>
+      <button class="mood-btn" data-mood="adulting" onclick="filterMood(this,'adulting')">🪣 Adulting</button>
+      <button class="mood-btn" data-mood="glowup" onclick="filterMood(this,'glowup')">🫧 Glow Up</button>
+    </div>
+  </div>
+
+  <!-- Focus Timer (hidden until activated) -->
+  <div class="timer-section" id="timerSection">
+    <div class="timer-header">
+      <div class="timer-label">⏱ Focus Session</div>
+      <button class="timer-close" onclick="closeTimer()">✕</button>
+    </div>
+    <div class="timer-display">
+      <div class="timer-task-name" id="timerTaskName">Working on...</div>
+      <div class="timer-countdown" id="timerCountdown">25:00</div>
+    </div>
+    <div class="timer-progress-bar">
+      <div class="timer-progress-fill" id="timerFill"></div>
+    </div>
+    <div class="timer-controls">
+      <button class="timer-len-btn active" onclick="setDuration(this,5)">5 min</button>
+      <button class="timer-len-btn" onclick="setDuration(this,10)">10 min</button>
+      <button class="timer-len-btn" onclick="setDuration(this,15)">15 min</button>
+      <button class="timer-len-btn" onclick="setDuration(this,25)">25 min</button>
+    </div>
+    <div class="timer-main-btns">
+      <button class="timer-play-btn" id="timerPlayBtn" onclick="toggleTimer()">▶ Start</button>
+      <button class="timer-reset-btn" onclick="resetTimer()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Focus Music -->
+  <div class="music-section">
+    <div class="tasks-header">
+      <div class="section-label">🎵 Focus playlists</div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="switchPlatform(this,'spotify')"  class="music-platform-btn active" title="Spotify">🟢</button>
+        <button onclick="switchPlatform(this,'youtube')"  class="music-platform-btn" title="YouTube">🔴</button>
+        <button onclick="switchPlatform(this,'apple')"    class="music-platform-btn" title="Apple Music">🎵</button>
+      </div>
+    </div>
+    <div class="music-tabs" id="musicTabs">
+      <button class="music-tab active" onclick="filterMusic(this,'all')">All</button>
+      <button class="music-tab" onclick="filterMusic(this,'focus')">🧠 Focus</button>
+      <button class="music-tab" onclick="filterMusic(this,'energy')">⚡ Energy</button>
+      <button class="music-tab" onclick="filterMusic(this,'chill')">🫧 Chill</button>
+      <button class="music-tab" onclick="filterMusic(this,'chores')">🪣 Chores</button>
+    </div>
+    <div class="music-scroll" id="musicScroll"></div>
+
+    <!-- My Playlists -->
+    <div class="my-playlists-section">
+      <div class="my-pl-header">
+        <span class="my-pl-label">⭐ My playlists</span>
+        <button class="add-pl-btn" onclick="openAddPlaylist()">＋ Add URL</button>
+      </div>
+      <div class="my-pl-scroll" id="myPlScroll">
+        <span class="my-pl-empty" id="myPlEmpty">Paste any Spotify, YouTube, or Apple Music URL to save it here.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dice Roller -->
+  <div class="dice-section">
+    <div class="dice-card">
+      <div class="dice-left">
+        <div class="die" id="dieEl" onclick="rollDice()" title="Roll for a task!">🎲</div>
+      </div>
+      <div class="dice-right">
+        <div class="dice-title">Can't decide? Roll it.</div>
+        <div class="dice-result" id="diceResult">Tap the die — let fate pick your next task.</div>
+        <div class="dice-hint" id="diceHint">Works on undone tasks in the current filter</div>
+        <button class="dice-go-btn" id="diceGoBtn" onclick="startRolledTask()">Focus on this ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly Goals -->
+  <div class="goals-section">
+    <div class="goals-header">
+      <div class="section-label">Weekly goals</div>
+      <button class="add-btn" onclick="openGoalModal()">＋ Add goal</button>
+    </div>
+    <div class="goals-list" id="goalsList"></div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="tasks-section">
+    <div class="tasks-header">
+      <div class="section-label">Your tasks</div>
+      <button class="add-btn" onclick="openModal()">＋ Add task</button>
+    </div>
+    <div class="task-list" id="taskList"></div>
+  </div>
+
+  <!-- Brain Dump -->
+  <div class="dump-section">
+    <div class="section-label">Brain dump 🧠</div>
+    <div class="dump-box">
+      <textarea class="dump-textarea" id="dumpText" placeholder="Thought spiraling? Just throw it here. No judgment, no commitment." rows="3"></textarea>
+      <div class="dump-footer">
+        <span class="dump-hint">Press Shift+Enter to save as task</span>
+        <button class="dump-save" onclick="saveDump()">Save thought</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Deadline / Calendar Sheet -->
+<div class="breakdown-overlay" id="deadlineOverlay" onclick="closeDeadline(event)">
+  <div class="deadline-sheet" onclick="event.stopPropagation()">
+    <div class="deadline-header">
+      <div class="deadline-title-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+        <span class="deadline-label">📅 Set deadline & reminder</span>
+        <button class="breakdown-close" onclick="closeDeadline()">✕</button>
+      </div>
+      <div class="deadline-task-name" id="deadlineTaskName">–</div>
+    </div>
+    <div class="deadline-body">
+      <div class="dl-field">
+        <label class="dl-label">How to remind you</label>
+        <div class="notif-toggle">
+          <button class="notif-opt active" id="notifOptApp" onclick="setNotifMode('app',this)">📳 App notification</button>
+          <button class="notif-opt" id="notifOptCal" onclick="setNotifMode('calendar',this)">📅 Google Calendar</button>
+        </div>
+      </div>
+      <div class="dl-field">
+        <label class="dl-label">Deadline date & time</label>
+        <input class="dl-input" type="datetime-local" id="dlDatetime" />
+      </div>
+      <div class="dl-field">
+        <label class="dl-label">Remind me before</label>
+        <div class="reminder-grid" id="reminderGrid">
+          <div class="reminder-chip" data-mins="10" onclick="toggleReminder(this)">10 min</div>
+          <div class="reminder-chip active" data-mins="30" onclick="toggleReminder(this)">30 min</div>
+          <div class="reminder-chip" data-mins="60" onclick="toggleReminder(this)">1 hour</div>
+          <div class="reminder-chip" data-mins="1440" onclick="toggleReminder(this)">1 day</div>
+          <div class="reminder-chip" data-mins="2880" onclick="toggleReminder(this)">2 days</div>
+        </div>
+      </div>
+      <div class="dl-field">
+        <label class="dl-label">Notes (optional)</label>
+        <input class="dl-input" type="text" id="dlNotes" placeholder="e.g. Final draft, submit via portal" />
+      </div>
+      <div class="cal-status" id="calStatus"></div>
+    </div>
+    <div class="deadline-footer">
+      <button class="dl-cancel" onclick="closeDeadline()">Cancel</button>
+      <button class="dl-cal-btn" id="dlCalBtn" onclick="saveReminder()">
+        <span id="dlCalBtnIcon">📳</span> <span id="dlCalBtnText">Set Reminder</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Breakdown Sheet -->
+<div class="breakdown-overlay" id="breakdownOverlay" onclick="closeBreakdown(event)">
+  <div class="breakdown-sheet" onclick="event.stopPropagation()">
+    <div class="breakdown-header">
+      <div class="breakdown-title-row">
+        <span class="breakdown-label">✦ AI breakdown</span>
+        <button class="breakdown-close" onclick="closeBreakdown()">✕</button>
+      </div>
+      <div class="breakdown-task-name" id="breakdownTaskName">–</div>
+    </div>
+    <div class="breakdown-body">
+      <div class="breakdown-loading" id="breakdownLoading">
+        <div class="spark-ring"></div>
+        <div class="breakdown-loading-text" id="breakdownLoadingText">Breaking this down for you…</div>
+      </div>
+      <div class="breakdown-steps" id="breakdownSteps">
+        <div class="breakdown-intro">Here are bite-sized steps — add the ones that feel right:</div>
+        <div id="stepsList"></div>
+      </div>
+    </div>
+    <div class="breakdown-footer" id="breakdownFooter" style="display:none">
+      <button class="breakdown-retry" onclick="runBreakdown()">↺ Retry</button>
+      <button class="breakdown-add-all" onclick="addAllSteps()">＋ Add all as tasks</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2>Add a task ✦</h2>
+    <div class="modal-field">
+      <label class="modal-label">What do you need to do?</label>
+      <input class="modal-input" id="newTaskTitle" placeholder="e.g. Reply to that email" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Time estimate</label>
+      <input class="modal-input" id="newTaskTime" placeholder="e.g. 5 min, 30 min" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Vibe</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="timer-len-btn active" id="vibeQuick" onclick="selectVibe('quick',this)">⚡ Quick</button>
+        <button class="timer-len-btn" id="vibeCreative" onclick="selectVibe('creative',this)">🎨 Creative</button>
+        <button class="timer-len-btn" id="vibeAdmin" onclick="selectVibe('admin',this)">📋 Admin</button>
+        <button class="timer-len-btn" id="vibeDeep" onclick="selectVibe('deep',this)">🧠 Deep</button>
+        <button class="timer-len-btn" id="vibeAdulting" onclick="selectVibe('adulting',this)">🪣 Adulting</button>
+        <button class="timer-len-btn" id="vibeGlowup" onclick="selectVibe('glowup',this)">🫧 Glow Up</button>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Color tag</label>
+      <div class="color-choices" id="colorChoices"></div>
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Repeat</label>
+      <div class="repeat-grid">
+        <div class="repeat-chip active" data-repeat="none" onclick="selectRepeat(this,'none')">Never</div>
+        <div class="repeat-chip" data-repeat="daily" onclick="selectRepeat(this,'daily')">Daily</div>
+        <div class="repeat-chip" data-repeat="weekly" onclick="selectRepeat(this,'weekly')">Weekly</div>
+        <div class="repeat-chip" data-repeat="custom" onclick="selectRepeat(this,'custom')">Custom days</div>
+      </div>
+      <div class="days-picker" id="daysPicker">
+        <button class="day-btn" data-day="SU" onclick="toggleDay(this)">Su</button>
+        <button class="day-btn" data-day="MO" onclick="toggleDay(this)">Mo</button>
+        <button class="day-btn" data-day="TU" onclick="toggleDay(this)">Tu</button>
+        <button class="day-btn" data-day="WE" onclick="toggleDay(this)">We</button>
+        <button class="day-btn" data-day="TH" onclick="toggleDay(this)">Th</button>
+        <button class="day-btn" data-day="FR" onclick="toggleDay(this)">Fr</button>
+        <button class="day-btn" data-day="SA" onclick="toggleDay(this)">Sa</button>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-add" onclick="addTask()">Add it ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Goal Modal -->
+<div class="overlay" id="goalOverlay">
+  <div class="modal">
+    <h2>Add a weekly goal 🎯</h2>
+    <div class="modal-field">
+      <label class="modal-label">What's the goal?</label>
+      <input class="modal-input" id="newGoalTitle" placeholder="e.g. Write 3 articles" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">How many times this week?</label>
+      <input class="modal-input" id="newGoalTarget" type="number" min="1" max="99" placeholder="e.g. 3" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">What are you counting? (optional)</label>
+      <input class="modal-input" id="newGoalUnit" placeholder="e.g. workouts, articles, glasses of water" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Color</label>
+      <div class="color-choices" id="goalColorChoices"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeGoalModal()">Cancel</button>
+      <button class="modal-add" onclick="addGoal()">Add goal ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Playlist Modal -->
+<div class="pl-modal-overlay" id="plOverlay" onclick="closePlModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:420px;">
+    <h2>Save a playlist ⭐</h2>
+    <div class="modal-field">
+      <label class="modal-label">Playlist URL</label>
+      <input class="modal-input" id="plUrl" placeholder="Paste Spotify, YouTube, or Apple Music URL" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Name</label>
+      <input class="modal-input" id="plName" placeholder="e.g. My deep work mix" />
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Icon (emoji)</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="plIconPicker">
+        <span class="repeat-chip active" onclick="selectPlIcon(this)">🎧</span>
+        <span class="repeat-chip" onclick="selectPlIcon(this)">🎵</span>
+        <span class="repeat-chip" onclick="selectPlIcon(this)">🧠</span>
+        <span class="repeat-chip" onclick="selectPlIcon(this)">⚡</span>
+        <span class="repeat-chip" onclick="selectPlIcon(this)">🫧</span>
+        <span class="repeat-chip" onclick="selectPlIcon(this)">🌊</span>
+        <span class="repeat-chip" onclick="selectPlIcon(this)">🔥</span>
+        <span class="repeat-chip" onclick="selectPlIcon(this)">🌙</span>
+        <span class="repeat-chip" onclick="selectPlIcon(this)">☕</span>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closePlModal()">Cancel</button>
+      <button class="modal-add" onclick="saveMyPlaylist()">Save playlist ✓</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = [
+  { name: 'purple', val: '#c084fc' },
+  { name: 'orange', val: '#fb923c' },
+  { name: 'mint',   val: '#34d399' },
+  { name: 'sky',    val: '#60a5fa' },
+  { name: 'pink',   val: '#f472b6' },
+  { name: 'yellow', val: '#facc15' },
+];
+
+const MOODS = ['all','quick','creative','admin','deep'];
+const ENERGY_LEVELS = [
+  { label: 'High energy', color: '#34d399' },
+  { label: 'Medium energy', color: '#facc15' },
+  { label: 'Low energy', color: '#60a5fa' },
+];
+
+let tasks = [];
+let goals = [];
+let completedToday = 0;
+let myPlaylists = [];
+
+// ── localStorage persistence ──
+const STORAGE_KEYS = {
+  tasks: 'adhdflow_tasks',
+  goals: 'adhdflow_goals',
+  completedToday: 'adhdflow_completed_today',
+  completedDate: 'adhdflow_completed_date',
+  myPlaylists: 'adhdflow_my_playlists',
+};
+
+const DEFAULT_TASKS = [];
+const DEFAULT_GOALS = [];
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks));
+    localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
+    localStorage.setItem(STORAGE_KEYS.completedToday, String(completedToday));
+    localStorage.setItem(STORAGE_KEYS.completedDate, new Date().toDateString());
+    localStorage.setItem(STORAGE_KEYS.myPlaylists, JSON.stringify(myPlaylists));
+  } catch(e) { console.warn('Storage save failed', e); }
+}
+
+function load() {
+  try {
+    const savedTasks = localStorage.getItem(STORAGE_KEYS.tasks);
+    const savedGoals = localStorage.getItem(STORAGE_KEYS.goals);
+    const savedDate  = localStorage.getItem(STORAGE_KEYS.completedDate);
+    const savedCount = localStorage.getItem(STORAGE_KEYS.completedToday);
+
+    tasks = savedTasks ? JSON.parse(savedTasks) : DEFAULT_TASKS;
+    goals = savedGoals ? JSON.parse(savedGoals) : DEFAULT_GOALS;
+    myPlaylists = JSON.parse(localStorage.getItem(STORAGE_KEYS.myPlaylists) || '[]');
+
+    // Reset daily count if it's a new day
+    const isToday = savedDate === new Date().toDateString();
+    completedToday = isToday && savedCount ? parseInt(savedCount) : 0;
+  } catch(e) {
+    console.warn('Storage load failed, using defaults', e);
+    tasks = DEFAULT_TASKS;
+    goals = DEFAULT_GOALS;
+    completedToday = 0;
+  }
+}
+
+function clearAllData() {
+  if (!confirm('Clear all tasks, goals, and progress? This cannot be undone.')) return;
+  Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+  tasks = [...DEFAULT_TASKS];
+  goals = [...DEFAULT_GOALS];
+  completedToday = 0;
+  renderTasks();
+  renderGoals();
+  renderStreakDots();
+  updateGreeting();
+}
+
+let selectedColor = COLORS[0].val;
+let energyIdx = 0;
+let timerInterval = null;
+let timerRunning = false;
+let timerDuration = 5 * 60;
+let timerRemaining = 5 * 60;
+let timerTaskName = '';
+let currentFilter = 'all';
+let selectedVibe = 'quick';
+let newVibe = 'quick';
+
+let selectedGoalColor = COLORS[1].val;
+let rolledTaskId = null;
+
+// ── AI Breakdown ──
+let breakdownTaskId = null;
+let currentSteps = [];
+
+function openBreakdown(id, e) {
+  e.stopPropagation();
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  breakdownTaskId = id;
+  document.getElementById('breakdownTaskName').textContent = task.title;
+  document.getElementById('breakdownOverlay').classList.add('show');
+  runBreakdown();
+}
+
+function closeBreakdown(e) {
+  if (e && e.target !== document.getElementById('breakdownOverlay')) return;
+  document.getElementById('breakdownOverlay').classList.remove('show');
+  currentSteps = [];
+  breakdownTaskId = null;
+}
+
+async function runBreakdown() {
+  const task = tasks.find(t => t.id === breakdownTaskId);
+  if (!task) return;
+
+  const loadingEl   = document.getElementById('breakdownLoading');
+  const stepsEl     = document.getElementById('breakdownSteps');
+  const footerEl    = document.getElementById('breakdownFooter');
+  const stepsListEl = document.getElementById('stepsList');
+  const loadingText = document.getElementById('breakdownLoadingText');
+
+  loadingEl.classList.remove('hidden');
+  stepsEl.classList.remove('show');
+  footerEl.style.display = 'none';
+  stepsListEl.innerHTML = '';
+  currentSteps = [];
+
+  const msgs = ['Breaking this down for you…','Thinking in small steps…','Making this less overwhelming…','Chunking it up…'];
+  loadingText.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+
+  const vibeContext = {
+    quick: 'quick, easy wins',
+    creative: 'creative, open-ended work',
+    admin: 'administrative, organizational tasks',
+    deep: 'deep focused work requiring concentration',
+    adulting: 'household chores and life admin',
+    glowup: 'self-care, wellness, and personal maintenance',
+  }[task.vibe] || task.vibe;
+
+  const prompt = `You are an ADHD coach helping someone break a task into small, concrete, actionable steps.
+
+Task: "${task.title}"
+Category: ${vibeContext}
+${task.time ? `Estimated time: ${task.time}` : ''}
+
+Return ONLY a JSON array of 4–6 steps. Each step object has:
+- "step": short action title (max 8 words, starts with a verb)
+- "detail": one helpful sentence of context or tip (max 20 words)
+- "time": quick estimate like "2 min" or "5 min"
+
+Rules: steps must be tiny and non-intimidating, no fluff, ONLY the JSON array, no markdown fences.`;
+
+  try {
+    // Detect if we're running standalone (GitHub Pages) vs inside Claude.ai
+    // The Anthropic API requires auth headers that are only proxied inside Claude.ai
+    const isStandalone = !window.location.hostname.includes('claude') &&
+                         !window.location.protocol.startsWith('blob') &&
+                         window.location.hostname !== '';
+
+    if (isStandalone) {
+      // Show a friendly "coming soon" state instead of a confusing error
+      loadingEl.classList.add('hidden');
+      stepsEl.classList.add('show');
+      footerEl.style.display = 'none';
+      stepsListEl.innerHTML = `
+        <div style="text-align:center;padding:28px 16px;">
+          <div style="font-size:2rem;margin-bottom:12px;">🚀</div>
+          <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:8px;">AI Breakdown — Coming Soon</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;max-width:280px;margin:0 auto;">
+            This feature uses the Claude AI and will be fully unlocked in the next version of ADHDFlow.<br><br>
+            <span style="color:var(--accent1);">In the meantime</span>, try the brain dump below to get your thoughts out — sometimes that's all you need to get unstuck. 🧠
+          </div>
+        </div>`;
+      return;
+    }
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const raw = (data.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    const steps = JSON.parse(raw);
+    currentSteps = steps;
+
+    loadingEl.classList.add('hidden');
+    stepsEl.classList.add('show');
+    footerEl.style.display = 'flex';
+
+    steps.forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = 'step-item';
+      el.style.animationDelay = (i * 0.07) + 's';
+      el.innerHTML = `
+        <div class="step-num">${i + 1}</div>
+        <div class="step-content">
+          <div class="step-text">${s.step}</div>
+          <div class="step-detail">${s.detail}${s.time ? ` · <em>${s.time}</em>` : ''}</div>
+        </div>
+        <button class="step-add-btn" id="step-btn-${i}" onclick="addStepAsTask(${i})">＋ Add</button>
+      `;
+      stepsListEl.appendChild(el);
+    });
+  } catch (err) {
+    loadingEl.classList.add('hidden');
+    stepsEl.classList.add('show');
+    footerEl.style.display = 'flex';
+    stepsListEl.innerHTML = `<div style="color:var(--muted);font-size:0.9rem;padding:20px 0;text-align:center;">Couldn't reach AI right now.<br>Check your connection and retry.</div>`;
+  }
+}
+
+function addStepAsTask(index) {
+  const task = tasks.find(t => t.id === breakdownTaskId);
+  const step = currentSteps[index];
+  if (!step) return;
+  tasks.unshift({
+    id: Date.now() + index,
+    title: step.step,
+    vibe: task?.vibe || 'quick',
+    time: step.time || null,
+    color: task?.color || '#c084fc',
+    done: false,
+  });
+  save();
+  const btn = document.getElementById(`step-btn-${index}`);
+  if (btn) { btn.textContent = '✓ Added'; btn.classList.add('added'); btn.disabled = true; }
+  renderTasks();
+}
+
+function addAllSteps() {
+  currentSteps.forEach((_, i) => {
+    const btn = document.getElementById(`step-btn-${i}`);
+    if (!btn?.disabled) addStepAsTask(i);
+  });
+}
+
+// ── Repeat tasks ──
+let selectedRepeat = 'none';
+let selectedDays = [];
+
+function selectRepeat(chip, val) {
+  selectedRepeat = val;
+  document.querySelectorAll('.repeat-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  document.getElementById('daysPicker').classList.toggle('show', val === 'custom');
+}
+
+function toggleDay(btn) {
+  const day = btn.dataset.day;
+  if (btn.classList.contains('active')) {
+    btn.classList.remove('active');
+    selectedDays = selectedDays.filter(d => d !== day);
+  } else {
+    btn.classList.add('active');
+    selectedDays.push(day);
+  }
+}
+
+function getRepeatLabel(task) {
+  if (!task.repeat || task.repeat === 'none') return '';
+  if (task.repeat === 'daily') return '↻ Daily';
+  if (task.repeat === 'weekly') return '↻ Weekly';
+  if (task.repeat === 'custom' && task.repeatDays?.length) return `↻ ${task.repeatDays.join(', ')}`;
+  return '↻';
+}
+
+function respawnRepeatingTasks() {
+  const today = new Date().toDateString();
+  tasks.forEach(task => {
+    if (!task.repeat || task.repeat === 'none') return;
+    if (!task.done) return;
+    if (task.lastRespawn === today) return;
+    // For daily: always respawn. For weekly/custom: check day of week.
+    const dayAbbr = ['SU','MO','TU','WE','TH','FR','SA'][new Date().getDay()];
+    const shouldRespawn =
+      task.repeat === 'daily' ||
+      (task.repeat === 'weekly' && task.repeatDays?.includes(dayAbbr)) ||
+      (task.repeat === 'custom' && task.repeatDays?.includes(dayAbbr));
+    if (shouldRespawn) {
+      task.done = false;
+      task.lastRespawn = today;
+    }
+  });
+  save();
+}
+
+// ── Notification mode ──
+let notifMode = 'app'; // 'app' or 'calendar'
+
+function setNotifMode(mode, btn) {
+  notifMode = mode;
+  document.querySelectorAll('.notif-opt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const calBtn = document.getElementById('dlCalBtn');
+  document.getElementById('dlCalBtnIcon').textContent = mode === 'calendar' ? '📅' : '📳';
+  document.getElementById('dlCalBtnText').textContent = mode === 'calendar' ? 'Add to Calendar' : 'Set Reminder';
+}
+
+async function saveReminder() {
+  const task = tasks.find(t => t.id === deadlineTaskId);
+  if (!task) return;
+  const val = document.getElementById('dlDatetime').value;
+  if (!val) { showCalStatus('error', '⚠ Please pick a date and time first.'); return; }
+
+  const deadline = new Date(val);
+  task.deadline = deadline.toISOString();
+  task.deadlineNote = document.getElementById('dlNotes').value.trim();
+  save();
+  renderTasks();
+
+  if (notifMode === 'app') {
+    // Use the Web Notifications API if permission granted
+    showCalStatus('loading', '⏳ Requesting notification permission…');
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') {
+        const firstReminder = Math.min(...selectedReminderMins);
+        const fireAt = deadline.getTime() - firstReminder * 60000;
+        const msUntil = fireAt - Date.now();
+        if (msUntil > 0) {
+          setTimeout(() => {
+            new Notification(`⏰ ADHDFlow Reminder`, {
+              body: `"${task.title}" is due in ${firstReminder >= 60 ? firstReminder/60 + ' hour(s)' : firstReminder + ' min'}`,
+              icon: '📳'
+            });
+          }, msUntil);
+          showCalStatus('success', `✓ Reminder set! You'll be notified ${firstReminder >= 60 ? firstReminder/60 + 'hr' : firstReminder + 'min'} before.`);
+        } else {
+          showCalStatus('error', '⚠ That time has already passed.');
+        }
+      } else {
+        showCalStatus('error', '⚠ Notification permission denied. Try Calendar instead.');
+      }
+    } catch(e) {
+      showCalStatus('error', '⚠ Notifications not supported in this browser.');
+    }
+  } else {
+    await sendToCalendar();
+  }
+}
+
+// ── Personal Playlists ──
+let selectedPlIcon = '🎧';
+
+function renderMyPlaylists() {
+  const scroll = document.getElementById('myPlScroll');
+  const empty  = document.getElementById('myPlEmpty');
+  if (myPlaylists.length === 0) {
+    scroll.innerHTML = '';
+    scroll.appendChild(empty);
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  scroll.innerHTML = '';
+  myPlaylists.forEach((pl, i) => {
+    const platformIcon = pl.url.includes('spotify') ? '🟢' : pl.url.includes('youtube') ? '🔴' : pl.url.includes('apple') ? '🎵' : '🔗';
+    const platformName = pl.url.includes('spotify') ? 'Spotify' : pl.url.includes('youtube') ? 'YouTube' : pl.url.includes('apple') ? 'Apple Music' : 'Link';
+    const a = document.createElement('a');
+    a.className = 'my-pl-card';
+    a.href = pl.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.innerHTML = `
+      <span class="playlist-icon">${pl.icon}</span>
+      <div class="playlist-name">${pl.name}</div>
+      <div class="playlist-meta">${platformIcon} ${platformName}</div>
+      <button class="my-pl-delete" onclick="deleteMyPlaylist(event,${i})" title="Remove">✕</button>
+    `;
+    scroll.appendChild(a);
+  });
+}
+
+function openAddPlaylist() {
+  document.getElementById('plOverlay').classList.add('show');
+  document.getElementById('plUrl').focus();
+}
+function closePlModal(e) {
+  if (e && e.target !== document.getElementById('plOverlay')) return;
+  document.getElementById('plOverlay').classList.remove('show');
+  document.getElementById('plUrl').value = '';
+  document.getElementById('plName').value = '';
+}
+function selectPlIcon(el) {
+  selectedPlIcon = el.textContent;
+  document.querySelectorAll('#plIconPicker .repeat-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+function saveMyPlaylist() {
+  const url  = document.getElementById('plUrl').value.trim();
+  const name = document.getElementById('plName').value.trim() || 'My Playlist';
+  if (!url) return;
+  myPlaylists.push({ url, name, icon: selectedPlIcon });
+  save();
+  renderMyPlaylists();
+  closePlModal();
+}
+function deleteMyPlaylist(e, i) {
+  e.preventDefault(); e.stopPropagation();
+  myPlaylists.splice(i, 1);
+  save();
+  renderMyPlaylists();
+}
+
+
+let deadlineTaskId = null;
+let selectedReminderMins = [30];
+
+function openDeadline(id, e) {
+  e.stopPropagation();
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  deadlineTaskId = id;
+  document.getElementById('deadlineTaskName').textContent = task.title;
+
+  // Pre-fill if deadline already set
+  const dtInput = document.getElementById('dlDatetime');
+  if (task.deadline) {
+    const d = new Date(task.deadline);
+    dtInput.value = d.toISOString().slice(0,16);
+  } else {
+    // Default to tomorrow at 9am
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    dtInput.value = tomorrow.toISOString().slice(0,16);
+  }
+
+  document.getElementById('dlNotes').value = task.deadlineNote || '';
+  document.getElementById('calStatus').className = 'cal-status';
+  document.getElementById('calStatus').innerHTML = '';
+  resetReminderChips();
+  document.getElementById('deadlineOverlay').classList.add('show');
+}
+
+function closeDeadline(e) {
+  if (e && e.target !== document.getElementById('deadlineOverlay')) return;
+  document.getElementById('deadlineOverlay').classList.remove('show');
+  deadlineTaskId = null;
+}
+
+function resetReminderChips() {
+  selectedReminderMins = [30];
+  document.querySelectorAll('.reminder-chip').forEach(c => {
+    c.classList.toggle('active', parseInt(c.dataset.mins) === 30);
+  });
+}
+
+function toggleReminder(chip) {
+  const mins = parseInt(chip.dataset.mins);
+  if (chip.classList.contains('active')) {
+    if (selectedReminderMins.length === 1) return; // keep at least one
+    chip.classList.remove('active');
+    selectedReminderMins = selectedReminderMins.filter(m => m !== mins);
+  } else {
+    chip.classList.add('active');
+    selectedReminderMins.push(mins);
+  }
+}
+
+function saveDeadlineOnly() {
+  const task = tasks.find(t => t.id === deadlineTaskId);
+  if (!task) return;
+  const val = document.getElementById('dlDatetime').value;
+  if (!val) return;
+  task.deadline = new Date(val).toISOString();
+  task.deadlineNote = document.getElementById('dlNotes').value.trim();
+  save();
+  renderTasks();
+  closeDeadline();
+}
+
+async function sendToCalendar() {
+  const task = tasks.find(t => t.id === deadlineTaskId);
+  if (!task) return;
+  const val = document.getElementById('dlDatetime').value;
+  if (!val) {
+    showCalStatus('error', '⚠ Please pick a date and time first.');
+    return;
+  }
+
+  const deadline = new Date(val);
+  const endTime = new Date(deadline.getTime() + 30 * 60000); // 30 min block
+  const notes = document.getElementById('dlNotes').value.trim();
+  const btn = document.getElementById('dlCalBtn');
+
+  showCalStatus('loading', '⏳ Adding to your calendar…');
+  btn.disabled = true;
+
+  // Save deadline locally too
+  task.deadline = deadline.toISOString();
+  task.deadlineNote = notes;
+  renderTasks();
+
+  // Build nudges from selected reminder chips
+  const nudges = selectedReminderMins.map(m => ({ minutes_before: m, method: 'notification' }));
+
+  try {
+    // This calls the real event_create_v1 tool via the parent Claude context
+    // We signal the parent app with a custom event so Claude handles the calendar call
+    window.dispatchEvent(new CustomEvent('adhdflow:addToCalendar', {
+      detail: {
+        title: `📌 Due: ${task.title}`,
+        start_time: deadline.toISOString(),
+        end_time: endTime.toISOString(),
+        event_description: notes || `ADHDFlow task — ${task.vibe} vibe`,
+        nudges,
+      }
+    }));
+
+    // Optimistically show success after short delay (Claude will handle real call)
+    setTimeout(() => {
+      showCalStatus('success', '✓ Sent to Calendar! Check your Google Calendar.');
+      btn.disabled = false;
+      btn.innerHTML = '<span>✓</span> Added!';
+      btn.style.background = 'linear-gradient(135deg,#34d399,#059669)';
+    }, 800);
+
+  } catch(err) {
+    showCalStatus('error', '⚠ Something went wrong. Try again.');
+    btn.disabled = false;
+  }
+}
+
+function showCalStatus(type, msg) {
+  const el = document.getElementById('calStatus');
+  el.className = `cal-status show ${type}`;
+  el.innerHTML = msg;
+}
+
+// ── Focus Music ──
+const PLAYLISTS = [
+  // Focus
+  { name: 'Deep Focus', desc: 'Lo-fi for deep work', icon: '🧠', tag: 'focus', color: '#c084fc',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ',
+    youtube: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+    apple:   'https://music.apple.com/us/playlist/a-little-calmer/pl.2b0e6e332fdf4b7a91164b21f59e516b' },
+  { name: 'Brain Food', desc: 'Instrumental focus', icon: '🎹', tag: 'focus', color: '#60a5fa',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DX9sIqqvKsjEK',
+    youtube: 'https://www.youtube.com/watch?v=5qap5aO4i9A',
+    apple:   'https://music.apple.com/us/playlist/focus-flow/pl.u-oZyloq3F4m78Vk' },
+  { name: 'Flow State', desc: 'Electronic for flow', icon: '🌊', tag: 'focus', color: '#34d399',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DX8NTLI2TtZa6',
+    youtube: 'https://www.youtube.com/watch?v=HMnrl0tmd3k',
+    apple:   'https://music.apple.com/us/playlist/pure-focus/pl.u-leyl0kGF4m78Vk' },
+  // Energy
+  { name: 'Power Hour', desc: 'Pump-up anthems', icon: '⚡', tag: 'energy', color: '#fb923c',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DX76Wlfdnj7AP',
+    youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    apple:   'https://music.apple.com/us/playlist/pure-energy/pl.54f6e2fa888f49e2bdb2b4e02b03e36d' },
+  { name: 'ADHD Boost', desc: 'High-BPM motivation', icon: '🚀', tag: 'energy', color: '#f472b6',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DX3rxVfibe1L0',
+    youtube: 'https://www.youtube.com/watch?v=7wtfhZwyrcc',
+    apple:   'https://music.apple.com/us/playlist/workout/pl.u-55GGBxgT4m78Vk' },
+  // Chill
+  { name: 'Soft Study', desc: 'Gentle background', icon: '☁️', tag: 'chill', color: '#c084fc',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DWWQbWPggwHck',
+    youtube: 'https://www.youtube.com/watch?v=lTRiuFIWV54',
+    apple:   'https://music.apple.com/us/playlist/soft-study/pl.u-NpXm65bT4m78Vk' },
+  { name: 'Cozy Rain', desc: 'Ambient rain sounds', icon: '🌧️', tag: 'chill', color: '#60a5fa',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DX4PP3DA4J0N8',
+    youtube: 'https://www.youtube.com/watch?v=mPZkdNFkNps',
+    apple:   'https://music.apple.com/us/playlist/ambient-nature/pl.u-kvXBlepC1m78Vk' },
+  // Chores
+  { name: 'Clean & Vibe', desc: 'Pop hits for chores', icon: '🧹', tag: 'chores', color: '#34d399',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DX1g0iEXLFycr',
+    youtube: 'https://www.youtube.com/watch?v=JGwWNGJdvx8',
+    apple:   'https://music.apple.com/us/playlist/cleaning-day/pl.u-oZyloq3F4m78Vk' },
+  { name: 'Adulting Beats', desc: 'Upbeat chore fuel', icon: '🏠', tag: 'chores', color: '#fb923c',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DX3rxVfibe1L0',
+    youtube: 'https://www.youtube.com/watch?v=ZbZSe6N_BXs',
+    apple:   'https://music.apple.com/us/playlist/feel-good-friday/pl.f4d106fed2bd41149eebc596c47ce6f' },
+  { name: 'Glow Up Mix', desc: 'Self-care soundtrack', icon: '🫧', tag: 'chores', color: '#f472b6',
+    spotify: 'https://open.spotify.com/playlist/37i9dQZF1DX5Ejj0EkURtP',
+    youtube: 'https://www.youtube.com/watch?v=kPa7bsKwL-c',
+    apple:   'https://music.apple.com/us/playlist/feel-good-hits/pl.u-AkAmXqbT4m78Vk' },
+];
+
+let musicFilter = 'all';
+let musicPlatform = 'spotify'; // default
+
+function renderMusic() {
+  const scroll = document.getElementById('musicScroll');
+  const list = musicFilter === 'all' ? PLAYLISTS : PLAYLISTS.filter(p => p.tag === musicFilter);
+  scroll.innerHTML = '';
+  list.forEach(p => {
+    const url = p[musicPlatform] || p.spotify;
+    const platformLabel = { spotify:'Spotify', youtube:'YouTube', apple:'Apple Music' }[musicPlatform];
+    const platformClass = { spotify:'platform-spotify', youtube:'platform-youtube', apple:'platform-apple' }[musicPlatform];
+    const a = document.createElement('a');
+    a.className = 'playlist-card';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.setProperty('--accent-pl', p.color);
+    a.innerHTML = `
+      <span class="playlist-icon">${p.icon}</span>
+      <div class="playlist-name">${p.name}</div>
+      <div class="playlist-meta">${p.desc}</div>
+      <span class="playlist-platform ${platformClass}">${platformLabel} ↗</span>
+    `;
+    scroll.appendChild(a);
+  });
+}
+
+function filterMusic(btn, tag) {
+  musicFilter = tag;
+  document.querySelectorAll('.music-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMusic();
+}
+
+function switchPlatform(btn, platform) {
+  musicPlatform = platform;
+  document.querySelectorAll('.music-platform-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMusic();
+}
+
+const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+function rollDice() {
+  const pool = (currentFilter === 'all' ? tasks : tasks.filter(t => t.vibe === currentFilter))
+    .filter(t => !t.done);
+  if (pool.length === 0) {
+    document.getElementById('diceResult').textContent = 'No undone tasks to roll! Add some first.';
+    document.getElementById('diceGoBtn').classList.remove('show');
+    rolledTaskId = null;
+    return;
+  }
+
+  const die = document.getElementById('dieEl');
+  die.classList.remove('rolling');
+  void die.offsetWidth; // reflow
+  die.classList.add('rolling');
+
+  // Animate through random faces
+  let ticks = 0;
+  const maxTicks = 10;
+  const tickInterval = setInterval(() => {
+    die.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
+    ticks++;
+    if (ticks >= maxTicks) {
+      clearInterval(tickInterval);
+      die.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
+      // Pick task
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+      rolledTaskId = picked.id;
+      const resultEl = document.getElementById('diceResult');
+      resultEl.classList.add('fading');
+      setTimeout(() => {
+        resultEl.textContent = `"${picked.title}"`;
+        resultEl.classList.remove('fading');
+        document.getElementById('diceGoBtn').classList.add('show');
+        document.getElementById('diceHint').textContent = picked.time ? `⏱ ${picked.time} · ${picked.vibe}` : picked.vibe;
+      }, 150);
+    }
+  }, 60);
+}
+
+function startRolledTask() {
+  if (!rolledTaskId) return;
+  startFocus(rolledTaskId, { stopPropagation: ()=>{}, clientX: window.innerWidth/2, clientY: window.innerHeight/2 });
+}
+
+// Goals
+function renderGoals() {
+  const list = document.getElementById('goalsList');
+  list.innerHTML = '';
+  if (goals.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px;font-size:0.9rem;">No weekly goals yet — add one to track progress!</div>`;
+    return;
+  }
+  goals.forEach(goal => {
+    const pct = Math.min(100, Math.round((goal.current / goal.target) * 100));
+    const done = goal.current >= goal.target;
+    const card = document.createElement('div');
+    card.className = 'goal-card';
+    card.innerHTML = `
+      <div class="goal-top">
+        <div class="goal-info">
+          <div class="goal-title">${goal.title}</div>
+          <div class="goal-sub">${pct}% there${done ? ' 🎉' : ''} · this week</div>
+        </div>
+        <div class="goal-counter">
+          <button class="counter-btn" onclick="adjustGoal(${goal.id},-1,event)" ${goal.current<=0?'disabled':''}>−</button>
+          <div class="counter-display">
+            <span class="current" style="color:${goal.color};-webkit-text-fill-color:${goal.color}">${goal.current}</span><span class="sep"> / </span><span class="target">${goal.target}</span>
+          </div>
+          <button class="counter-btn" onclick="adjustGoal(${goal.id},1,event)">＋</button>
+          <button class="icon-btn" onclick="deleteGoal(${goal.id},event)" title="Remove">✕</button>
+        </div>
+      </div>
+      <div class="goal-bar-wrap">
+        <div class="goal-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${goal.color},${goal.color}99)"></div>
+      </div>
+      <div class="goal-complete-badge ${done ? 'show' : ''}">✓ Goal reached!</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function adjustGoal(id, delta, e) {
+  e.stopPropagation();
+  const goal = goals.find(g => g.id === id);
+  if (!goal) return;
+  const prev = goal.current;
+  goal.current = Math.max(0, goal.current + delta);
+  save();
+  if (delta > 0 && prev < goal.target && goal.current >= goal.target) {
+    celebrate(e);
+    completedToday++;
+    renderStreakDots();
+    updateGreeting();
+  }
+  renderGoals();
+}
+
+function deleteGoal(id, e) {
+  e.stopPropagation();
+  goals = goals.filter(g => g.id !== id);
+  save();
+  renderGoals();
+}
+
+// Goal modal
+function openGoalModal() {
+  document.getElementById('goalOverlay').classList.add('show');
+  renderGoalColorChoices();
+  document.getElementById('newGoalTitle').focus();
+}
+function closeGoalModal() {
+  document.getElementById('goalOverlay').classList.remove('show');
+  document.getElementById('newGoalTitle').value = '';
+  document.getElementById('newGoalTarget').value = '';
+  document.getElementById('newGoalUnit').value = '';
+}
+function renderGoalColorChoices() {
+  const cc = document.getElementById('goalColorChoices');
+  cc.innerHTML = '';
+  COLORS.forEach(c => {
+    const btn = document.createElement('div');
+    btn.className = 'color-choice' + (c.val === selectedGoalColor ? ' selected' : '');
+    btn.style.background = c.val;
+    btn.onclick = () => {
+      selectedGoalColor = c.val;
+      document.querySelectorAll('#goalColorChoices .color-choice').forEach(x => x.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+    cc.appendChild(btn);
+  });
+}
+function addGoal() {
+  const title = document.getElementById('newGoalTitle').value.trim();
+  const target = parseInt(document.getElementById('newGoalTarget').value) || 1;
+  const unit = document.getElementById('newGoalUnit').value.trim() || 'times';
+  if (!title) return;
+  goals.push({ id: Date.now(), title, target, current: 0, unit, color: selectedGoalColor });
+  save();
+  closeGoalModal();
+  renderGoals();
+}
+
+
+// Init
+function init() {
+  load();
+  respawnRepeatingTasks();
+  renderStreakDots();
+  renderColorChoices();
+  renderTasks();
+  renderGoals();
+  renderMusic();
+  renderMyPlaylists();
+  setDurationDefault();
+}
+
+function renderStreakDots() {
+  const dots = document.getElementById('streakDots');
+  dots.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const d = document.createElement('div');
+    d.className = 'streak-dot' + (i < completedToday ? ' lit' : '');
+    dots.appendChild(d);
+  }
+}
+
+function renderColorChoices() {
+  const cc = document.getElementById('colorChoices');
+  cc.innerHTML = '';
+  COLORS.forEach(c => {
+    const btn = document.createElement('div');
+    btn.className = 'color-choice' + (c.val === selectedColor ? ' selected' : '');
+    btn.style.background = c.val;
+    btn.onclick = () => {
+      selectedColor = c.val;
+      document.querySelectorAll('.color-choice').forEach(x => x.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+    cc.appendChild(btn);
+  });
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  const filtered = currentFilter === 'all' ? tasks : tasks.filter(t => t.vibe === currentFilter);
+  // Sort: not done first
+  filtered.sort((a,b) => a.done - b.done);
+  list.innerHTML = '';
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:var(--muted);padding:24px;font-size:0.9rem;">No tasks in this vibe yet — add one!</div>`;
+    return;
+  }
+  filtered.forEach(task => {
+    const card = document.createElement('div');
+    card.className = 'task-card' + (task.done ? ' done' : '');
+    card.style.setProperty('--accent-color', task.color);
+
+    const vibeEmoji = { quick:'⚡', creative:'🎨', admin:'📋', deep:'🧠', adulting:'🪣', glowup:'🫧' }[task.vibe] || '';
+    const deadlineBadge = task.deadline ? (() => {
+      const d = new Date(task.deadline);
+      const now = new Date();
+      const hoursLeft = (d - now) / 36e5;
+      const urgent = hoursLeft < 24 && hoursLeft > 0;
+      const overdue = hoursLeft <= 0;
+      const label = overdue ? '⚠ Overdue' : `📅 ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}${d.getHours()!==0||d.getMinutes()!==0?' · '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):''}`;
+      return `<span class="deadline-badge${urgent||overdue?' urgent':''}">${label}</span>`;
+    })() : '';
+
+    card.innerHTML = `
+      <div class="task-top">
+        <div class="task-check" onclick="toggleTask(${task.id},event)">${task.done ? '✓' : ''}</div>
+        <div class="task-title">${task.title}</div>
+      </div>
+      <div class="task-bottom">
+        <div class="task-meta">
+          <span class="task-tag" style="color:${task.color};border-color:${task.color}30;background:${task.color}15">${vibeEmoji} ${task.vibe}</span>
+          ${task.time ? `<span class="task-time">⏱ ${task.time}</span>` : ''}
+          ${deadlineBadge}
+          ${getRepeatLabel(task) ? `<span class="repeat-badge">${getRepeatLabel(task)}</span>` : ''}
+        </div>
+        <div class="task-actions">
+          ${!task.done ? `<button class="cal-btn" onclick="openDeadline(${task.id},event)" title="Set deadline">📅</button>` : ''}
+          ${!task.done ? `<button class="breakdown-btn" onclick="openBreakdown(${task.id},event)">✦ Break it down</button>` : ''}
+          ${!task.done ? `<button class="start-btn" onclick="startFocus(${task.id},event)">Focus ▶</button>` : ''}
+          <button class="icon-btn" onclick="deleteTask(${task.id},event)" title="Remove">✕</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function toggleTask(id, e) {
+  e.stopPropagation();
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  if (!task.done) {
+    completedToday++;
+    save();
+    renderStreakDots();
+    celebrate(e);
+    updateGreeting();
+  }
+  task.done = !task.done;
+  save();
+  renderTasks();
+}
+
+function deleteTask(id, e) {
+  e.stopPropagation();
+  tasks = tasks.filter(t => t.id !== id);
+  save();
+  renderTasks();
+}
+
+function startFocus(id, e) {
+  e.stopPropagation();
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  timerTaskName = task.title;
+  document.getElementById('timerTaskName').textContent = timerTaskName;
+  document.getElementById('timerSection').classList.add('visible');
+  document.getElementById('timerSection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  resetTimer();
+}
+
+function closeTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  document.getElementById('timerSection').classList.remove('visible');
+}
+
+function setDuration(btn, mins) {
+  document.querySelectorAll('.timer-len-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  timerDuration = mins * 60;
+  timerRemaining = timerDuration;
+  updateTimerDisplay();
+  if (timerRunning) { clearInterval(timerInterval); timerRunning = false; document.getElementById('timerPlayBtn').textContent = '▶ Start'; }
+}
+
+function setDurationDefault() {
+  timerDuration = 5 * 60;
+  timerRemaining = 5 * 60;
+  updateTimerDisplay();
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('timerPlayBtn').textContent = '▶ Resume';
+  } else {
+    timerRunning = true;
+    document.getElementById('timerPlayBtn').textContent = '⏸ Pause';
+    timerInterval = setInterval(() => {
+      timerRemaining--;
+      updateTimerDisplay();
+      if (timerRemaining <= 0) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        document.getElementById('timerPlayBtn').textContent = '▶ Start';
+        document.getElementById('timerCountdown').textContent = 'Done! 🎉';
+        completedToday++;
+        save();
+        renderStreakDots();
+        updateGreeting();
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerRemaining = timerDuration;
+  document.getElementById('timerPlayBtn').textContent = '▶ Start';
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerRemaining / 60).toString().padStart(2,'0');
+  const s = (timerRemaining % 60).toString().padStart(2,'0');
+  document.getElementById('timerCountdown').textContent = `${m}:${s}`;
+  const pct = (timerRemaining / timerDuration) * 100;
+  document.getElementById('timerFill').style.width = pct + '%';
+}
+
+function filterMood(btn, mood) {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = mood;
+  renderTasks();
+}
+
+function cycleEnergy() {
+  energyIdx = (energyIdx + 1) % ENERGY_LEVELS.length;
+  const e = ENERGY_LEVELS[energyIdx];
+  document.getElementById('energyLabel').textContent = e.label;
+  document.getElementById('energyDot').style.background = e.color;
+  document.getElementById('energyDot').style.boxShadow = `0 0 6px ${e.color}`;
+  updateGreeting();
+}
+
+function updateGreeting() {
+  const greetings = [
+    "What's calling your attention?",
+    "What feels easy right now?",
+    "You've got this — pick one thing.",
+    `${completedToday} done ✓ — keep the momentum.`,
+    "What's the smallest useful thing?",
+  ];
+  const g = document.getElementById('greetingText');
+  g.style.opacity = '0';
+  setTimeout(() => {
+    g.textContent = greetings[completedToday % greetings.length];
+    g.style.opacity = '1';
+    g.style.transition = 'opacity 0.4s';
+  }, 200);
+}
+
+// Modal
+function openModal() {
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('newTaskTitle').focus();
+}
+function closeModal() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('newTaskTitle').value = '';
+  document.getElementById('newTaskTime').value = '';
+  selectedRepeat = 'none';
+  selectedDays = [];
+  document.querySelectorAll('.repeat-chip').forEach((c,i) => c.classList.toggle('active', i===0));
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('daysPicker').classList.remove('show');
+}
+function selectVibe(vibe, btn) {
+  newVibe = vibe;
+  document.querySelectorAll('#overlay .timer-len-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function addTask() {
+  const title = document.getElementById('newTaskTitle').value.trim();
+  if (!title) return;
+  const time = document.getElementById('newTaskTime').value.trim();
+  tasks.unshift({
+    id: Date.now(),
+    title,
+    vibe: newVibe,
+    time: time || null,
+    color: selectedColor,
+    done: false,
+    repeat: selectedRepeat,
+    repeatDays: selectedRepeat === 'custom' ? [...selectedDays] : (selectedRepeat === 'weekly' ? [['SU','MO','TU','WE','TH','FR','SA'][new Date().getDay()]] : []),
+  });
+  save();
+  closeModal();
+  renderTasks();
+}
+
+// Brain dump
+function saveDump() {
+  const text = document.getElementById('dumpText').value.trim();
+  if (!text) return;
+  tasks.unshift({
+    id: Date.now(),
+    title: text.slice(0,80),
+    vibe: 'quick',
+    time: null,
+    color: '#c084fc',
+    done: false,
+  });
+  save();
+  document.getElementById('dumpText').value = '';
+  renderTasks();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const ta = document.getElementById('dumpText');
+  ta.addEventListener('keydown', e => {
+    if (e.shiftKey && e.key === 'Enter') { e.preventDefault(); saveDump(); }
+  });
+});
+
+// Confetti
+function celebrate(e) {
+  const x = e.clientX || window.innerWidth / 2;
+  const y = e.clientY || window.innerHeight / 2;
+  const confColors = ['#c084fc','#fb923c','#34d399','#60a5fa','#f472b6','#facc15'];
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.background = confColors[Math.floor(Math.random() * confColors.length)];
+    el.style.transform = `translate(${(Math.random()-0.5)*120}px, ${(Math.random()-0.5)*60}px)`;
+    el.style.animationDelay = (Math.random() * 0.2) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  }
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openModal(); }
+  if (e.key === 'Escape') { closeModal(); closeGoalModal(); closeDeadline(); closePlModal(); }
+});
+
+// Listen for calendar requests from the app — Claude intercepts this
+window.addEventListener('adhdflow:addToCalendar', (e) => {
+  // Post the event details up to the Claude conversation layer
+  window.parent?.postMessage({ type: 'adhdflow:calendar', detail: e.detail }, '*');
+});
+
+init();
+</script>
+</body>
+</html>
